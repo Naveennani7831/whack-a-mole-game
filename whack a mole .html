@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whack-a-Mole Game</title>
+    <link rel="icon" type="image/png" href="./mole.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        html, body {
+            height: 100%;
+        }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background-repeat: no-repeat;
+            background-size: cover;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background-color: rgba(0, 0, 0, .3);
+        }
+        .score, .timer {
+            border: 1px solid;
+            background-color: whitesmoke;
+            box-shadow: 2px 2px;
+            border-radius: 10px;
+            padding: px;
+            font-size: 2em;
+            color: orangered;
+            margin-bottom: 20px;
+        }
+        .score{
+            margin-top: 10px;
+        }
+        .timer {
+            color: black;
+            font-size: 2rem;
+            margin-bottom: -5px;
+        }
+
+        
+        .board {
+            height: 500px;
+            width: 500px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 80px;
+            margin-top: 20px;
+        }
+        .hole {
+            background-color: rgb(165, 85, 11);
+            border-radius: 50%;
+            box-shadow: inset 0 10px 0 7px rgb(53, 21, 6),
+                        inset 0 20px 20px 15px rgba(0, 0, 0, .3),
+                        0 0 5px rgba(0, 0, 0, .5);
+            position: relative;
+            overflow: hidden;
+        }
+        .hole .mole {
+            width: 70%;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 0;
+            animation: rise .3s ease-out;
+        }
+        @keyframes rise {
+            0% {
+                transform: translateX(-50%) translateY(100%);
+            }
+            100% {
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+        .cursor {
+            height: 110px;
+            width: 100px;
+            position: absolute;
+            top: 100px;
+            left: 100px;
+            background-image: url("./hammer2.png");
+            background-size: 100% 100%;
+            transform: translate(-20%, -20%);
+            transition: transform .1s;
+            pointer-events: none;
+        }
+        .cursor.active {
+            transform: translate(-20%, -20%) rotate(-45deg);
+        }
+        .controls {
+            display: flex;
+            margin-top: 35px;
+            gap: 20px;
+        }
+        .btn {
+            font-size: 25px;
+            border-radius: 60px;
+            padding: 0 5px;
+            box-shadow: 2px 2px;
+        }
+        .btn-primary {
+            background-color: green;
+        }
+        .btn-danger {
+            background-color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="score"><b>SCORE:</b> <span><b>00</b></span></h1>
+    <div class="timer"><b>TIME:</b> <span id="time"><b>30</b></span><b>s</b></div>
+    <div class="board">
+        <div class="hole"></div>
+        <div class="hole"></div>
+        <div class="hole"></div>
+        <div class="hole"></div>
+        <div class="hole"></div>
+        <div class="hole"></div>
+        <div class="hole"></div>
+        <div class="hole"></div>
+        <div class="hole"></div>
+    </div>
+    <div class="controls">
+        <button id="start-button" class="btn btn-primary">Start Game</button>
+        <button id="stop-button" class="btn btn-danger" disabled>Stop Game</button>
+    </div>
+    <div class="cursor"></div>
+
+    <script>
+        const cursor = document.querySelector('.cursor');
+        const holes = document.querySelectorAll('.hole');
+        const scoreEl = document.querySelector('.score span');
+        const timeEl = document.getElementById('time');
+        const startButton = document.getElementById('start-button');
+        const stopButton = document.getElementById('stop-button');
+        const topScoresList = document.getElementById('top-scores-list');
+        let score = 0;
+        let timeLeft = 30;
+        let gameInterval;
+        let moleTimeout;
+        const sound = new Audio("./gamemash.mp3");
+
+        startButton.addEventListener('click', startGame);
+        stopButton.addEventListener('click', stopGame);
+
+        function startGame() {
+            score = 0;
+            timeLeft = 30;
+            scoreEl.textContent = score;
+            timeEl.textContent = timeLeft;
+            startButton.disabled = true;
+            stopButton.disabled = false;
+
+            clearInterval(gameInterval);
+            clearTimeout(moleTimeout);
+
+            gameInterval = setInterval(countDown, 1000);
+            showMole();
+        }
+
+        function stopGame() {
+            startButton.disabled = false;
+            stopButton.disabled = true;
+
+            clearInterval(gameInterval);
+            clearTimeout(moleTimeout);
+            document.querySelectorAll('.mole').forEach(mole => mole.remove());
+        }
+
+        function countDown() {
+            if (timeLeft > 0) {
+                timeLeft--;
+                timeEl.textContent = timeLeft;
+            } else {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            clearInterval(gameInterval);
+            clearTimeout(moleTimeout);
+            alert('Game Over! Your score is ' + score);
+            saveScore(score);
+            startButton.disabled = false;
+            stopButton.disabled = true;
+            updateTopScores();
+        }
+
+        function showMole() {
+            const i = Math.floor(Math.random() * holes.length);
+            const hole = holes[i];
+            const img = document.createElement('img');
+            img.classList.add('mole');
+            img.src = "./mole.png";
+            img.alt = "Mole";
+
+            img.addEventListener('click', () => {
+                score += 10;
+                sound.play();
+                scoreEl.textContent = score;
+                clearTimeout(moleTimeout);
+                img.remove();
+                if (timeLeft > 0) {
+                    showMole();
+                }
+            });
+
+            hole.appendChild(img);
+
+            moleTimeout = setTimeout(() => {
+                img.remove();
+                if (timeLeft > 0) {
+                    showMole();
+                }
+            }, 1500);
+        }
+
+        window.addEventListener('mousemove', e => {
+            cursor.style.top = `${e.pageY}px`;
+            cursor.style.left = `${e.pageX}px`;
+        });
+        window.addEventListener('mousedown', () => {
+            cursor.classList.add('active');
+        });
+        window.addEventListener('mouseup', () => {
+            cursor.classList.remove('active');
+        });
+
+        function saveScore(newScore) {
+            let scores = JSON.parse(localStorage.getItem('scores')) || [];
+            scores.push(newScore);
+            scores.sort((a, b) => b - a);
+            scores = scores.slice(0, 5); // Keep only top 5 scores
+            localStorage.setItem('scores', JSON.stringify(scores));
+        }
+
+        function updateTopScores() {
+            const scores = JSON.parse(localStorage.getItem('scores')) || [];
+            topScoresList.innerHTML = scores.map(score => `<li>${score}</li>`).join('');
+        }
+
+        updateTopScores();
+    </script>
+</body>
+</html>
