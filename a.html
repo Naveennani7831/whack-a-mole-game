@@ -30,12 +30,12 @@
             background-color: whitesmoke;
             box-shadow: 2px 2px;
             border-radius: 10px;
-            padding: px;
+            padding: 10px;
             font-size: 2em;
             color: orangered;
             margin-bottom: 20px;
         }
-        .score{
+        .score {
             margin-top: 10px;
         }
         .timer {
@@ -43,8 +43,6 @@
             font-size: 2rem;
             margin-bottom: -5px;
         }
-
-        
         .board {
             height: 500px;
             width: 500px;
@@ -105,11 +103,13 @@
             padding: 0 5px;
             box-shadow: 2px 2px;
         }
-        .btn-primary {
-            background-color: green;
-        }
         .btn-danger {
             background-color: red;
+            box-shadow: 2px 2px 4px;
+        }
+        .btn-restart {
+            background-color: orange;
+            box-shadow: 2px 2px 4px;
         }
     </style>
 </head>
@@ -128,8 +128,11 @@
         <div class="hole"></div>
     </div>
     <div class="controls">
-        <button id="start-button" class="btn btn-primary">Start Game</button>
+        <button style="background-color: greenyellow;" id="easy-button" class="btn btn-primary">Easy</button>
+        <button style="background-color: cyan;" id="medium-button" class="btn btn-primary">Medium</button>
+        <button style="background-color: burlywood;" id="hard-button" class="btn btn-primary">Hard</button>
         <button id="stop-button" class="btn btn-danger" disabled>Stop Game</button>
+        <button id="restart-button" class="btn btn-restart" disabled>Restart Game</button>
     </div>
     <div class="cursor"></div>
 
@@ -138,25 +141,36 @@
         const holes = document.querySelectorAll('.hole');
         const scoreEl = document.querySelector('.score span');
         const timeEl = document.getElementById('time');
-        const startButton = document.getElementById('start-button');
+        const easyButton = document.getElementById('easy-button');
+        const mediumButton = document.getElementById('medium-button');
+        const hardButton = document.getElementById('hard-button');
         const stopButton = document.getElementById('stop-button');
+        const restartButton = document.getElementById('restart-button');
         const topScoresList = document.getElementById('top-scores-list');
         let score = 0;
         let timeLeft = 30;
         let gameInterval;
         let moleTimeout;
+        let difficulty;
         const sound = new Audio("./gamemash.mp3");
 
-        startButton.addEventListener('click', startGame);
+        easyButton.addEventListener('click', () => startGame('easy'));
+        mediumButton.addEventListener('click', () => startGame('medium'));
+        hardButton.addEventListener('click', () => startGame('hard'));
         stopButton.addEventListener('click', stopGame);
+        restartButton.addEventListener('click', restartGame);
 
-        function startGame() {
+        function startGame(level) {
+            difficulty = level;
             score = 0;
             timeLeft = 30;
             scoreEl.textContent = score;
             timeEl.textContent = timeLeft;
-            startButton.disabled = true;
+            easyButton.disabled = true;
+            mediumButton.disabled = true;
+            hardButton.disabled = true;
             stopButton.disabled = false;
+            restartButton.disabled = false;
 
             clearInterval(gameInterval);
             clearTimeout(moleTimeout);
@@ -166,12 +180,20 @@
         }
 
         function stopGame() {
-            startButton.disabled = false;
+            easyButton.disabled = false;
+            mediumButton.disabled = false;
+            hardButton.disabled = false;
             stopButton.disabled = true;
+            restartButton.disabled = true;
 
             clearInterval(gameInterval);
             clearTimeout(moleTimeout);
             document.querySelectorAll('.mole').forEach(mole => mole.remove());
+        }
+
+        function restartGame() {
+            stopGame();
+            startGame(difficulty);
         }
 
         function countDown() {
@@ -188,8 +210,11 @@
             clearTimeout(moleTimeout);
             alert('Game Over! Your score is ' + score);
             saveScore(score);
-            startButton.disabled = false;
+            easyButton.disabled = false;
+            mediumButton.disabled = false;
+            hardButton.disabled = false;
             stopButton.disabled = true;
+            restartButton.disabled = true;
             updateTopScores();
         }
 
@@ -214,12 +239,25 @@
 
             hole.appendChild(img);
 
+            let moleTime;
+            switch (difficulty) {
+                case 'easy':
+                    moleTime = 1500;
+                    break;
+                case 'medium':
+                    moleTime = 1000;
+                    break;
+                case 'hard':
+                    moleTime = 500;
+                    break;
+            }
+
             moleTimeout = setTimeout(() => {
                 img.remove();
                 if (timeLeft > 0) {
                     showMole();
                 }
-            }, 1500);
+            }, moleTime);
         }
 
         window.addEventListener('mousemove', e => {
@@ -237,16 +275,16 @@
             let scores = JSON.parse(localStorage.getItem('scores')) || [];
             scores.push(newScore);
             scores.sort((a, b) => b - a);
-            scores = scores.slice(0, 5); // Keep only top 5 scores
+            scores = scores.slice(0, 5); 
             localStorage.setItem('scores', JSON.stringify(scores));
         }
 
-        function updateTopScores() {
-            const scores = JSON.parse(localStorage.getItem('scores')) || [];
-            topScoresList.innerHTML = scores.map(score => `<li>${score}</li>`).join('');
-        }
-
-        updateTopScores();
+        // function updateTopScores() {
+        //     const scores = JSON.parse(localStorage.getItem('scores')) || [];
+        //     topScoresList.innerHTML = scores.map(score => `<li>${score}</li>`).join('');
+        // }
+        // updateTopScores();
     </script>
 </body>
 </html>
+
